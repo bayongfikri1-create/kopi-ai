@@ -1,0 +1,158 @@
+[
+  {
+    "id": 1,
+    "nama": "Espresso",
+    "kategori": "Kopi",
+    "harga": 15000,
+    "deskripsi": "Shot tunggal pekat dan intens.",
+    "tags": [
+      "pahit",
+      "kuat"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 2,
+    "nama": "Americano",
+    "kategori": "Kopi",
+    "harga": 18000,
+    "deskripsi": "Espresso dengan air, ringan dan bersih.",
+    "tags": [
+      "pahit",
+      "segar"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 3,
+    "nama": "Cafe Latte",
+    "kategori": "Kopi",
+    "harga": 25000,
+    "deskripsi": "Espresso dengan susu steamed yang lembut.",
+    "tags": [
+      "creamy",
+      "manis"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 4,
+    "nama": "Cappuccino",
+    "kategori": "Kopi",
+    "harga": 25000,
+    "deskripsi": "Espresso, susu, dan busa tebal.",
+    "tags": [
+      "creamy",
+      "kuat"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 5,
+    "nama": "Kopi Susu Gula Aren",
+    "kategori": "Kopi",
+    "harga": 22000,
+    "deskripsi": "Kopi susu khas dengan gula aren.",
+    "tags": [
+      "manis",
+      "creamy"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 6,
+    "nama": "Cold Brew",
+    "kategori": "Kopi",
+    "harga": 27000,
+    "deskripsi": "Diseduh dingin 16 jam, rasa halus dan segar.",
+    "tags": [
+      "segar",
+      "kuat"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 7,
+    "nama": "Matcha Latte",
+    "kategori": "Non-Kopi",
+    "harga": 26000,
+    "deskripsi": "Matcha dengan susu, tanpa kopi.",
+    "tags": [
+      "creamy",
+      "manis"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 8,
+    "nama": "Coklat Panas",
+    "kategori": "Non-Kopi",
+    "harga": 22000,
+    "deskripsi": "Coklat pekat dengan susu.",
+    "tags": [
+      "manis",
+      "creamy"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 9,
+    "nama": "Lemon Tea",
+    "kategori": "Non-Kopi",
+    "harga": 18000,
+    "deskripsi": "Teh dengan perasan lemon.",
+    "tags": [
+      "segar",
+      "asam"
+    ],
+    "minuman": true,
+    "tersedia": true
+  },
+  {
+    "id": 10,
+    "nama": "Croissant Butter",
+    "kategori": "Makanan",
+    "harga": 20000,
+    "deskripsi": "Croissant renyah dengan mentega.",
+    "tags": [
+      "makanan",
+      "gurih"
+    ],
+    "minuman": false,
+    "tersedia": true
+  },
+  {
+    "id": 11,
+    "nama": "Roti Bakar Coklat Keju",
+    "kategori": "Makanan",
+    "harga": 18000,
+    "deskripsi": "Roti tebal dengan coklat dan keju.",
+    "tags": [
+      "makanan",
+      "manis"
+    ],
+    "minuman": false,
+    "tersedia": true
+  },
+  {
+    "id": 12,
+    "nama": "Kentang Goreng",
+    "kategori": "Makanan",
+    "harga": 17000,
+    "deskripsi": "Kentang goreng dengan saus sambal.",
+    "tags": [
+      "makanan",
+      "gurih"
+    ],
+    "minuman": false,
+    "tersedia": true
+  }
+]

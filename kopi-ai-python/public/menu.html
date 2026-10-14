@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kelola Menu - Kopi Sudut</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .page { padding: 18px 20px 40px; max-width: 1200px; margin: 0 auto; }
+  .layout { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 18px; }
+  .panel h2 { font-size: 20px; margin-bottom: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label, .field legend { display: block; font-weight: 600; margin-bottom: 5px; padding: 0; }
+  fieldset.field { border: 0; padding: 0; margin-left: 0; margin-right: 0; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tags label { font-weight: 500; margin: 0; border: 1.5px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; background: #fff; }
+  .tags input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .tags label:has(input:checked) { background: var(--green); border-color: var(--green); color: #fff; }
+  .tags label:has(input:focus-visible) { outline: 3px solid var(--crema); outline-offset: 2px; }
+  .check { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .check input { width: 20px; height: 20px; }
+  .actions { display: flex; gap: 8px; }
+  .actions .btn:first-child { flex: 1; }
+  .err { color: var(--danger); min-height: 20px; margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 600; font-size: 14px; }
+  td.r, th.r { text-align: right; }
+  td .sub { display: block; font-size: 13px; color: var(--muted); }
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 13px; font-weight: 600; }
+  .badge.ok { background: #dcefe3; color: #1d5a37; }
+  .badge.habis { background: #f6dcd7; color: #8a2d20; }
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .btn.bahaya { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
+  .btn.bahaya:hover { background: rgba(184, 64, 47, 0.08); }
+  tr.sedang-edit { background: #fff4d6; }
+  .cari { margin-bottom: 12px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-weight: 600; z-index: 50; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Kopi Sudut · Kelola Menu</h1>
+  <a href="/barista">Antrean</a>
+  <a href="/menu" class="aktif">Kelola menu</a>
+  <a href="/laporan">Laporan</a>
+  <a href="/meja">QR meja</a>
+  <a href="/?meja=1" target="_blank" rel="noopener">Lihat sisi pelanggan</a>
+</div>
+
+<div class="page">
+  <div class="layout">
+    <section class="panel" aria-labelledby="judulForm">
+      <h2 id="judulForm">Tambah menu baru</h2>
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="fNama">Nama menu</label>
+          <input id="fNama" maxlength="60" placeholder="Contoh: Vietnam Drip" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="fKategori">Kategori</label>
+          <input id="fKategori" list="daftarKategori" maxlength="30" placeholder="Pilih atau ketik kategori baru" autocomplete="off">
+          <datalist id="daftarKategori"></datalist>
+        </div>
+        <div class="field">
+          <label for="fHarga">Harga (Rp)</label>
+          <input id="fHarga" type="number" min="1" max="10000000" step="500" inputmode="numeric" placeholder="Contoh: 24000">
+        </div>
+        <div class="field">
+          <label for="fDeskripsi">Deskripsi singkat</label>
+          <input id="fDeskripsi" maxlength="150" placeholder="Contoh: Kopi tetes dengan susu kental manis" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="fJenis">Jenis</label>
+          <select id="fJenis">
+            <option value="minuman">Minuman</option>
+            <option value="makanan">Makanan</option>
+          </select>
+          <div class="hint">Minuman menampilkan pilihan ukuran, gula, dan suhu kepada pelanggan.</div>
+        </div>
+        <fieldset class="field">
+          <legend>Cita rasa (dipakai Barista AI)</legend>
+          <div class="tags" id="tags"></div>
+        </fieldset>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="fTersedia" checked> Tersedia untuk dipesan</label>
+        </div>
+        <div class="err" id="err" role="alert"></div>
+        <div class="actions">
+          <button class="btn" type="submit" id="btnSimpan">Tambah menu</button>
+          <button class="btn ghost hidden" type="button" id="btnBatal">Batal</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="judulDaftar">
+      <h2 id="judulDaftar">Daftar menu (<span id="jumlah">0</span>)</h2>
+      <input class="cari" id="cari" type="search" placeholder="Cari nama atau kategori..." aria-label="Cari menu">
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Menu</th><th>Kategori</th><th class="r">Harga</th><th>Status</th><th class="r">Aksi</th></tr></thead>
+          <tbody id="isi"></tbody>
+        </table>
+      </div>
+      <p class="hint">Menu yang diubah atau dihapus langsung tampil di halaman pelanggan. Riwayat pesanan lama tidak terpengaruh.</p>
+    </section>
+  </div>
+</div>
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script>
+const TAGS = [['pahit', 'Pahit'], ['manis', 'Manis'], ['segar', 'Segar'], ['creamy', 'Creamy'], ['kuat', 'Kuat'], ['asam', 'Asam'], ['gurih', 'Gurih']];
+const rp = (n) => 'Rp' + Number(n).toLocaleString('id-ID');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (id) => document.getElementById(id);
+
+let menu = [];
+let editId = null;
+let toastTimer = null;
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 2500);
+}
+async function api(method, url, body) {
+  let res;
+  try {
+    res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  } catch { throw new Error('Tidak dapat terhubung ke server. Pastikan server.py masih berjalan.'); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan');
+  return data;
+}
+
+// ---------- Form ----------
+$('tags').innerHTML = TAGS.map(([v, l]) => `<label><input type="checkbox" name="tag" value="${v}">${l}</label>`).join('');
+
+function isiForm(m) {
+  $('fNama').value = m ? m.nama : '';
+  $('fKategori').value = m ? m.kategori : '';
+  $('fHarga').value = m ? m.harga : '';
+  $('fDeskripsi').value = m ? m.deskripsi : '';
+  $('fJenis').value = m && !m.minuman ? 'makanan' : 'minuman';
+  $('fTersedia').checked = m ? !!m.tersedia : true;
+  document.querySelectorAll('input[name="tag"]').forEach((c) => { c.checked = !!m && m.tags.includes(c.value); });
+  $('err').textContent = '';
+}
+function modeTambah() {
+  editId = null; isiForm(null);
+  $('judulForm').textContent = 'Tambah menu baru';
+  $('btnSimpan').textContent = 'Tambah menu';
+  $('btnBatal').classList.add('hidden');
+  renderTabel();
+}
+function modeEdit(m) {
+  editId = m.id; isiForm(m);
+  $('judulForm').textContent = 'Ubah menu';
+  $('btnSimpan').textContent = 'Simpan perubahan';
+  $('btnBatal').classList.remove('hidden');
+  renderTabel();
+  $('fNama').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('fNama').focus();
+}
+$('btnBatal').addEventListener('click', modeTambah);
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = {
+    nama: $('fNama').value.trim(),
+    kategori: $('fKategori').value.trim(),
+    harga: $('fHarga').value,
+    deskripsi: $('fDeskripsi').value.trim(),
+    minuman: $('fJenis').value === 'minuman',
+    tersedia: $('fTersedia').checked,
+    tags: [...document.querySelectorAll('input[name="tag"]:checked')].map((c) => c.value),
+  };
+  if (!data.nama) { $('err').textContent = 'Nama menu wajib diisi.'; $('fNama').focus(); return; }
+  if (!data.kategori) { $('err').textContent = 'Kategori wajib diisi.'; $('fKategori').focus(); return; }
+  if (!(Number(data.harga) > 0)) { $('err').textContent = 'Harga harus berupa angka lebih dari 0.'; $('fHarga').focus(); return; }
+  $('btnSimpan').disabled = true;
+  try {
+    if (editId) { await api('PUT', '/api/menu/' + editId, data); toast('Perubahan disimpan'); }
+    else { await api('POST', '/api/menu', data); toast('Menu ditambahkan'); }
+    modeTambah(); await muat();
+  } catch (err) { $('err').textContent = err.message; }
+  $('btnSimpan').disabled = false;
+});
+
+// ---------- Daftar ----------
+async function muat() {
+  try { menu = await api('GET', '/api/menu'); }
+  catch (err) { $('isi').innerHTML = `<tr><td colspan="5" class="err">${esc(err.message)}</td></tr>`; return; }
+  $('daftarKategori').innerHTML = [...new Set(['Kopi', 'Non-Kopi', 'Makanan', ...menu.map((m) => m.kategori)])].map((k) => `<option value="${esc(k)}">`).join('');
+  renderTabel();
+}
+function renderTabel() {
+  const q = $('cari').value.trim().toLowerCase();
+  const list = menu.filter((m) => !q || m.nama.toLowerCase().includes(q) || m.kategori.toLowerCase().includes(q));
+  $('jumlah').textContent = menu.length;
+  $('isi').innerHTML = list.map((m) => `
+    <tr class="${m.id === editId ? 'sedang-edit' : ''}">
+      <td><strong>${esc(m.nama)}</strong><span class="sub">${m.minuman ? 'Minuman' : 'Makanan'}${m.tags.length ? ' · ' + esc(m.tags.filter((t) => t !== 'makanan').join(', ')) : ''}</span></td>
+      <td>${esc(m.kategori)}</td>
+      <td class="r rp">${rp(m.harga)}</td>
+      <td><span class="badge ${m.tersedia ? 'ok' : 'habis'}">${m.tersedia ? 'Tersedia' : 'Habis'}</span></td>
+      <td><div class="row-actions">
+        <button class="btn ghost small" data-act="edit" data-id="${m.id}" aria-label="Ubah ${esc(m.nama)}">Ubah</button>
+        <button class="btn ghost small" data-act="toggle" data-id="${m.id}" aria-label="${m.tersedia ? 'Tandai habis' : 'Sediakan lagi'} ${esc(m.nama)}">${m.tersedia ? 'Tandai habis' : 'Sediakan'}</button>
+        <button class="btn bahaya small" data-act="hapus" data-id="${m.id}" aria-label="Hapus ${esc(m.nama)}">Hapus</button>
+      </div></td>
+    </tr>`).join('') || `<tr><td colspan="5" class="hint">${q ? 'Tidak ada menu yang cocok.' : 'Belum ada menu. Tambahkan lewat formulir.'}</td></tr>`;
+}
+$('cari').addEventListener('input', renderTabel);
+$('isi').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const m = menu.find((x) => x.id === Number(b.dataset.id)); if (!m) return;
+  try {
+    if (b.dataset.act === 'edit') return modeEdit(m);
+    if (b.dataset.act === 'toggle') {
+      const r = await api('PATCH', `/api/menu/${m.id}/tersedia`);
+      toast(`${m.nama}: ${r.tersedia ? 'tersedia' : 'ditandai habis'}`);
+    }
+    if (b.dataset.act === 'hapus') {
+      if (!confirm(`Hapus "${m.nama}" dari menu?`)) return;
+      await api('DELETE', '/api/menu/' + m.id);
+      if (editId === m.id) modeTambah();
+      toast('Menu dihapus');
+    }
+    await muat();
+  } catch (err) { toast(err.message); }
+});
+
+// Sinkron bila menu diubah dari perangkat lain
+try {
+  const es = new EventSource('/api/events');
+  es.addEventListener('menu', muat);
+} catch {}
+modeTambah(); muat();
+</script>
+</body>
+</html>

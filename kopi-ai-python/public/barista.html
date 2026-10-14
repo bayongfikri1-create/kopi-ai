@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dasbor Barista - Kopi Sudut</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .page { padding: 18px 20px 40px; max-width: 1200px; margin: 0 auto; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .toolbar .live { margin-left: auto; font-size: 14px; color: var(--muted); }
+  .live::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--line); margin-right: 6px; }
+  .live.on::before { background: var(--ok); }
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+  .col h2 { font-size: 20px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .col h2 span { font-family: var(--sans); font-size: 14px; background: var(--ink); color: #fff; border-radius: 999px; padding: 2px 10px; }
+  .card { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card.telat { border-color: var(--danger); background: #fcefec; }
+  .card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card .meja { font-family: var(--serif); font-size: 26px; font-weight: 700; }
+  .card .waktu { font-size: 14px; color: var(--muted); }
+  .card.telat .waktu { color: var(--danger); font-weight: 700; }
+  .card ul { list-style: none; margin: 10px 0; padding: 0; }
+  .card li { padding: 4px 0; border-bottom: 1px dashed var(--line); }
+  .card li small { display: block; color: var(--muted); }
+  .catatan { background: #fff4d6; border-radius: 8px; padding: 6px 10px; font-size: 14px; margin-bottom: 10px; }
+  .card .btn { width: 100%; }
+  .kosong { color: var(--muted); padding: 14px 4px; }
+  .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .menu-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .menu-row.habis { opacity: 0.65; }
+  details { margin-top: 28px; }
+  summary { font-family: var(--serif); font-size: 20px; font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Kopi Sudut · Barista</h1>
+  <a href="/barista" class="aktif">Antrean</a>
+  <a href="/menu">Kelola menu</a>
+  <a href="/laporan">Laporan</a>
+  <a href="/meja">QR meja</a>
+  <a href="/?meja=1" target="_blank" rel="noopener">Lihat sisi pelanggan</a>
+</div>
+<div class="page">
+  <div class="toolbar">
+    <button class="btn ghost small" id="btnSuara">Aktifkan suara pesanan baru</button>
+    <span class="live" id="live">Menghubungkan…</span>
+  </div>
+  <div class="board" id="board"></div>
+
+  <details>
+    <summary>Menu cepat: tandai habis / tersedia</summary>
+    <div class="menu-grid" id="menuGrid"></div>
+    <p style="margin-top:12px"><a href="/menu">Tambah, ubah, atau hapus menu &rarr;</a></p>
+  </details>
+</div>
+
+<script>
+const rp = (n) => 'Rp' + Number(n).toLocaleString('id-ID');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (id) => document.getElementById(id);
+const KOLOM = [['Baru', 'Diproses', 'Mulai buat'], ['Diproses', 'Siap', 'Tandai siap'], ['Siap', 'Selesai', 'Selesai diantar']];
+const BATAS_MENIT = 10;
+let orders = [];
+let suara = false;
+let audioCtx = null;
+
+function bunyi() {
+  if (!suara || !audioCtx) return;
+  [880, 1175].forEach((f, i) => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+    const t = audioCtx.currentTime + i * 0.18;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.start(t); o.stop(t + 0.17);
+  });
+}
+$('btnSuara').addEventListener('click', () => {
+  suara = !suara;
+  if (suara) { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); bunyi(); }
+  $('btnSuara').textContent = suara ? 'Suara aktif (klik untuk matikan)' : 'Aktifkan suara pesanan baru';
+});
+
+function menitLalu(iso) { return Math.max(0, Math.floor((Date.now() - new Date(iso)) / 60000)); }
+function detail(i) { return i.ukuran ? `${i.ukuran} · gula ${i.gula}% · ${i.suhu}` : ''; }
+
+function render() {
+  $('board').innerHTML = KOLOM.map(([status, next, label]) => {
+    const list = orders.filter((o) => o.status === status);
+    return `<section class="col" aria-label="${status}">
+      <h2>${status === 'Siap' ? 'Siap diantar' : status} <span>${list.length}</span></h2>
+      ${list.map((o) => {
+        const m = menitLalu(o.waktu);
+        const telat = status !== 'Siap' && m >= BATAS_MENIT;
+        return `<article class="card ${telat ? 'telat' : ''}">
+          <div class="top"><span class="meja">Meja ${esc(o.meja)}</span><span class="waktu">${esc(o.kode)} · ${m} menit${telat ? ' (terlambat)' : ''}</span></div>
+          <ul>${o.items.map((i) => `<li><strong>${i.qty}× ${esc(i.nama)}</strong>${detail(i) ? `<small>${esc(detail(i))}</small>` : ''}</li>`).join('')}</ul>
+          ${o.catatan ? `<div class="catatan">Catatan: ${esc(o.catatan)}</div>` : ''}
+          <button class="btn" data-id="${o.id}" data-s="${next}">${label}</button>
+        </article>`;
+      }).join('') || '<div class="kosong">Tidak ada pesanan.</div>'}
+    </section>`;
+  }).join('');
+}
+
+async function muatOrders(bunyiBaru) {
+  const data = await (await fetch('/api/orders')).json();
+  const aktif = data.filter((o) => o.status !== 'Selesai');
+  if (bunyiBaru && aktif.some((o) => o.status === 'Baru' && !orders.some((x) => x.id === o.id))) bunyi();
+  orders = aktif; render();
+}
+$('board').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-id]'); if (!b) return;
+  b.disabled = true;
+  await fetch('/api/orders/' + b.dataset.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: b.dataset.s }) });
+  muatOrders(false);
+});
+
+// Kelola menu
+async function muatMenu() {
+  const menu = await (await fetch('/api/menu')).json();
+  $('menuGrid').innerHTML = menu.map((m) => `
+    <div class="menu-row ${m.tersedia ? '' : 'habis'}">
+      <div><strong>${esc(m.nama)}</strong><div class="muted">${esc(m.kategori)} · ${rp(m.harga)}</div></div>
+      <button class="btn small ${m.tersedia ? 'ghost' : ''}" data-menu="${m.id}">${m.tersedia ? 'Tandai habis' : 'Sediakan lagi'}</button>
+    </div>`).join('');
+}
+$('menuGrid').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-menu]'); if (!b) return;
+  await fetch(`/api/menu/${b.dataset.menu}/tersedia`, { method: 'PATCH' });
+  muatMenu();
+});
+
+// Real-time via SSE + cadangan polling
+function sambung() {
+  const es = new EventSource('/api/events');
+  es.onopen = () => { $('live').textContent = 'Terhubung (real-time)'; $('live').classList.add('on'); };
+  es.addEventListener('update', () => muatOrders(true));
+  es.addEventListener('menu', muatMenu);
+  es.onerror = () => { $('live').textContent = 'Terputus, mencoba lagi…'; $('live').classList.remove('on'); };
+}
+muatOrders(false); muatMenu(); sambung();
+setInterval(render, 30000);           // perbarui penghitung menit
+setInterval(() => muatOrders(true), 15000); // cadangan bila SSE terputus
+</script>
+</body>
+</html>

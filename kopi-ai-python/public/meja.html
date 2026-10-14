@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR Meja - Kopi Sudut</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .page { padding: 18px 20px 40px; max-width: 1000px; margin: 0 auto; }
+  .form { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 8px; }
+  .form label { font-weight: 600; display: block; margin-bottom: 4px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+  .qrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .qr { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; }
+  .qr h2 { font-size: 22px; margin-bottom: 8px; }
+  .qr img { width: 100%; max-width: 160px; height: auto; background: #fff; }
+  .qr a { display: block; font-size: 12px; word-break: break-all; margin-top: 6px; color: var(--muted); }
+  @media (max-width: 600px) { .form { grid-template-columns: 1fr; } }
+  @media print { .topbar, .form, .hint, .noprint { display: none !important; } body { background: #fff; } }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Kopi Sudut · QR Meja</h1>
+  <a href="/barista">Antrean</a>
+  <a href="/menu">Kelola menu</a>
+  <a href="/laporan">Laporan</a>
+  <a href="/meja" class="aktif">QR meja</a>
+</div>
+<div class="page">
+  <div class="form">
+    <div><label for="base">Alamat server</label><input id="base"></div>
+    <div><label for="jml">Jumlah meja</label><input id="jml" type="number" min="1" max="60" value="8"></div>
+    <button class="btn" id="btnBuat">Buat QR</button>
+  </div>
+  <p class="hint">Agar bisa dipindai dari HP, ganti "localhost" dengan alamat IP laptop (terlihat di terminal saat server dijalankan), misalnya http://192.168.1.10:3000. HP dan laptop harus satu Wi-Fi. Gambar QR dimuat dari layanan qrserver.com sehingga butuh internet; tautan di bawah tiap QR tetap bisa dipakai tanpa internet.</p>
+  <div class="qrs" id="qrs"></div>
+  <p class="noprint" style="margin-top:20px"><button class="btn ghost" onclick="window.print()">Cetak halaman ini</button></p>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+$('base').value = location.origin;
+function buat() {
+  const base = $('base').value.replace(/\/+$/, '');
+  const n = Math.min(60, Math.max(1, Number($('jml').value) || 1));
+  let html = '';
+  for (let i = 1; i <= n; i++) {
+    const url = `${base}/?meja=${i}`;
+    html += `<div class="qr"><h2>Meja ${i}</h2><img alt="QR code untuk Meja ${i}" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}"><a href="${url}" target="_blank" rel="noopener">${url}</a></div>`;
+  }
+  $('qrs').innerHTML = html;
+}
+$('btnBuat').addEventListener('click', buat);
+buat();
+</script>
+</body>
+</html>

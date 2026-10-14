@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kopi Sudut - Pesan dari Meja</title>
+<link rel="stylesheet" href="style.css">
+<script src="common.js"></script>
+<style>
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px 120px; }
+  header.hero { padding: 28px 0 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  header.hero h1 { font-size: 32px; line-height: 1.1; }
+  .meja-badge { background: var(--green); color: var(--green-ink); border-radius: 999px; padding: 6px 14px; font-weight: 600; white-space: nowrap; }
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 14px; position: sticky; top: 0; background: var(--bg); z-index: 5; }
+  .tab { border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 7px 16px; white-space: nowrap; color: var(--ink); }
+  .tab[aria-selected="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .item { display: flex; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .item .info { flex: 1; min-width: 0; }
+  .item h3 { font-size: 18px; }
+  .item p { margin: 2px 0 4px; font-size: 14px; color: var(--muted); }
+  .item.habis { opacity: 0.5; }
+  .add { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--green); color: #fff; font-size: 24px; line-height: 1; flex-shrink: 0; }
+  .add:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; font-size: 12px; width: 52px; border-radius: 10px; }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); z-index: 10; }
+  .bar .in { max-width: 640px; margin: 0 auto; display: flex; gap: 10px; }
+  .bar .btn { flex: 1; display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; }
+  .bar .ai { flex: 0 0 auto; }
+
+  .overlay { position: fixed; inset: 0; background: rgba(20, 30, 26, 0.5); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { background: var(--surface); width: 100%; max-width: 640px; max-height: 88vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); }
+  .sheet h2 { font-size: 24px; margin-bottom: 4px; }
+  .sheet .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .close { border: 0; background: transparent; font-size: 28px; line-height: 1; color: var(--muted); }
+  fieldset { border: 0; padding: 0; margin: 16px 0 0; }
+  legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
+  .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .opts label { flex: 1; min-width: 70px; text-align: center; border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 6px; cursor: pointer; background: #fff; }
+  .opts input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .opts label:has(input:checked) { border-color: var(--green); background: var(--green); color: #fff; }
+  .opts label:has(input:focus-visible) { outline: 3px solid var(--crema); outline-offset: 2px; }
+  .qty { display: inline-flex; align-items: center; gap: 12px; }
+  .qty button { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line); background: #fff; font-size: 18px; }
+  .qty span { min-width: 20px; text-align: center; font-weight: 600; }
+  .cart-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .cart-row small { color: var(--muted); display: block; }
+  .total { display: flex; justify-content: space-between; font-size: 20px; font-weight: 700; margin: 16px 0 12px; font-family: var(--serif); }
+  .err { color: var(--danger); margin: 8px 0 0; font-size: 14px; min-height: 18px; }
+
+  .chat-log { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; min-height: 120px; }
+  .bubble { padding: 10px 14px; border-radius: 14px; max-width: 90%; }
+  .bubble.me { background: var(--green); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .bubble.bot { background: #fff; border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .rek { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--line); margin-top: 8px; }
+  .rek small { display: block; color: var(--muted); }
+  .chat-form { display: flex; gap: 8px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chips button { border: 1px dashed var(--muted); background: transparent; border-radius: 999px; padding: 5px 12px; font-size: 13px; color: var(--ink); }
+
+  .status-box { text-align: center; padding: 40px 0 10px; }
+  .status-box .kode { font-family: var(--serif); font-size: 56px; font-weight: 700; line-height: 1; }
+  .steps { display: flex; gap: 6px; margin: 28px 0 8px; }
+  .steps div { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
+  .steps div.on { background: var(--crema); }
+  .steps-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+  .status-now { font-size: 22px; font-weight: 700; margin-top: 18px; font-family: var(--serif); }
+  .empty { color: var(--muted); text-align: center; padding: 30px 0; }
+  .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 12px; font-weight: 600; z-index: 40; max-width: 90%; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="hero">
+    <h1>Kopi Sudut</h1>
+    <span class="meja-badge" id="mejaBadge"></span>
+  </header>
+
+  <!-- Layar status pesanan -->
+  <section id="viewStatus" class="hidden">
+    <div class="status-box">
+      <div class="muted">Nomor pesananmu</div>
+      <div class="kode" id="stKode"></div>
+      <div class="status-now" id="stNow"></div>
+      <p class="muted" id="stDesc"></p>
+      <div class="steps" id="stSteps"></div>
+      <div class="steps-label"><span>Diterima</span><span>Dibuat</span><span>Siap diantar</span><span>Selesai</span></div>
+    </div>
+    <div style="margin-top:28px">
+      <div id="stItems"></div>
+      <div class="total"><span>Total</span><span class="rp" id="stTotal"></span></div>
+      <button class="btn ghost" style="width:100%" id="btnBaru">Pesan lagi</button>
+    </div>
+  </section>
+
+  <!-- Layar menu -->
+  <section id="viewMenu">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div id="menuList"></div>
+  </section>
+</div>
+
+<div class="bar" id="bar">
+  <div class="in">
+    <button class="btn ghost ai" id="btnAI" aria-label="Tanya Barista AI">Tanya Barista AI</button>
+    <button class="btn crema" id="btnCart"><span id="cartCount">Keranjang kosong</span><span class="rp" id="cartTotal"></span></button>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast" role="status"></div>
+
+<!-- Sheet opsi minuman -->
+<div class="overlay hidden" id="ovOpsi" role="dialog" aria-modal="true" aria-labelledby="opsiNama">
+  <div class="sheet">
+    <div class="head">
+      <div><h2 id="opsiNama"></h2><div class="muted" id="opsiDesc"></div></div>
+      <button class="close" data-close aria-label="Tutup">&times;</button>
+    </div>
+    <fieldset><legend>Ukuran</legend><div class="opts" id="optUkuran"></div></fieldset>
+    <fieldset><legend>Level gula</legend><div class="opts" id="optGula"></div></fieldset>
+    <fieldset><legend>Suhu</legend><div class="opts" id="optSuhu"></div></fieldset>
+    <div class="total"><span>Harga</span><span class="rp" id="opsiHarga"></span></div>
+    <button class="btn" style="width:100%" id="btnTambah">Tambah ke keranjang</button>
+  </div>
+</div>
+
+<!-- Sheet keranjang -->
+<div class="overlay hidden" id="ovCart" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+  <div class="sheet">
+    <div class="head"><h2 id="cartTitle">Keranjang</h2><button class="close" data-close aria-label="Tutup">&times;</button></div>
+    <div id="cartList"></div>
+    <div id="mejaField" class="hidden" style="margin-top:14px">
+      <label for="mejaInput" style="font-weight:600">Nomor meja</label>
+      <input id="mejaInput" inputmode="numeric" maxlength="10" placeholder="Contoh: 5">
+    </div>
+    <div style="margin-top:14px">
+      <label for="catatan" style="font-weight:600">Catatan untuk barista (opsional)</label>
+      <textarea id="catatan" rows="2" maxlength="200" placeholder="Contoh: es batu dipisah"></textarea>
+    </div>
+    <div class="total"><span>Total</span><span class="rp" id="cartSum"></span></div>
+    <div class="err" id="cartErr" role="alert"></div>
+    <button class="btn" style="width:100%" id="btnPesan">Pesan sekarang</button>
+  </div>
+</div>
+
+<!-- Sheet Barista AI -->
+<div class="overlay hidden" id="ovAI" role="dialog" aria-modal="true" aria-labelledby="aiTitle">
+  <div class="sheet">
+    <div class="head"><div><h2 id="aiTitle">Tanya Barista AI</h2><div class="muted">Ceritakan seleramu, kami carikan menunya.</div></div><button class="close" data-close aria-label="Tutup">&times;</button></div>
+    <div class="chips" id="chips"></div>
+    <div class="chat-log" id="chatLog" aria-live="polite"></div>
+    <form class="chat-form" id="chatForm">
+      <input id="chatInput" placeholder="Contoh: kopi yang tidak terlalu pahit dan segar" maxlength="300" autocomplete="off" aria-label="Pesan untuk barista AI">
+      <button class="btn" type="submit" id="chatSend">Kirim</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const UKURAN = { S: 0, M: 3000, L: 6000 };
+const rp = (n) => 'Rp' + Number(n).toLocaleString('id-ID');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+let menu = [];
+let kategori = 'Kopi';
+let cart = store.get('kopi_cart', []);
+let meja = new URLSearchParams(location.search).get('meja') || store.get('kopi_meja', '');
+let pilihan = null;          // item menu yang sedang dipilih opsinya
+let opsi = { ukuran: 'M', gula: 50, suhu: 'Es' };
+let pollTimer = null;
+
+function setMeja(v) {
+  meja = String(v || '').trim();
+  store.set('kopi_meja', meja);
+  $('mejaBadge').textContent = meja ? 'Meja ' + meja : 'Pilih meja';
+}
+
+// ---------- Menu ----------
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 3500);
+}
+async function loadMenu() {
+  try {
+    const res = await fetch('/api/menu');
+    if (!res.ok) throw new Error();
+    menu = await res.json();
+  } catch {
+    $('menuList').innerHTML = '<div class="empty">Tidak dapat terhubung ke server. Pastikan server.py berjalan, lalu muat ulang halaman.</div>';
+    return;
+  }
+  renderTabs();
+  renderMenu();
+  syncCart();
+}
+// Samakan isi keranjang dengan menu terbaru (menu dihapus/habis/harga berubah)
+function syncCart() {
+  const awal = cart.length;
+  cart = cart.filter((c) => { const m = menu.find((x) => x.id === c.id); return m && m.tersedia; });
+  cart.forEach((c) => {
+    const m = menu.find((x) => x.id === c.id);
+    c.nama = m.nama; c.harga = m.harga + (c.ukuran ? UKURAN[c.ukuran] : 0);
+  });
+  simpanKeranjang();
+  if (cart.length < awal) toast('Sebagian menu di keranjang sudah habis atau dihapus.');
+  if (!$('ovCart').classList.contains('hidden')) renderCart();
+}
+function renderTabs() {
+  const kats = [...new Set(menu.map((m) => m.kategori))];
+  if (!kats.includes(kategori)) kategori = kats[0];
+  $('tabs').innerHTML = kats.map((k) => `<button class="tab" role="tab" aria-selected="${k === kategori}" data-k="${esc(k)}">${esc(k)}</button>`).join('');
+}
+function renderMenu() {
+  const list = menu.filter((m) => m.kategori === kategori);
+  $('menuList').innerHTML = list.map((m) => `
+    <div class="item ${m.tersedia ? '' : 'habis'}">
+      <div class="info">
+        <h3>${esc(m.nama)}</h3>
+        <p>${esc(m.deskripsi)}</p>
+        <strong class="rp">${rp(m.harga)}</strong>
+      </div>
+      <button class="add" data-id="${m.id}" ${m.tersedia ? '' : 'disabled'} aria-label="Tambah ${esc(m.nama)}">${m.tersedia ? '+' : 'Habis'}</button>
+    </div>`).join('') || '<div class="empty">Belum ada menu.</div>';
+}
+$('tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  kategori = b.dataset.k; renderTabs(); renderMenu();
+});
+$('menuList').addEventListener('click', (e) => {
+  const b = e.target.closest('.add'); if (!b || b.disabled) return;
+  const m = menu.find((x) => x.id === Number(b.dataset.id));
+  if (m.minuman) bukaOpsi(m); else tambahKeranjang(m, {});
+});
+
+// ---------- Opsi minuman ----------
+function radioGroup(id, name, items, selected) {
+  $(id).innerHTML = items.map(([val, label]) =>
+    `<label><input type="radio" name="${name}" value="${esc(val)}" ${String(val) === String(selected) ? 'checked' : ''}>${esc(label)}</label>`).join('');
+}
+function bukaOpsi(m) {
+  pilihan = m; opsi = { ukuran: 'M', gula: 50, suhu: 'Es' };
+  $('opsiNama').textContent = m.nama; $('opsiDesc').textContent = m.deskripsi;
+  radioGroup('optUkuran', 'ukuran', [['S', 'S'], ['M', 'M (+3rb)'], ['L', 'L (+6rb)']], opsi.ukuran);
+  radioGroup('optGula', 'gula', [[0, '0%'], [50, '50%'], [100, '100%']], opsi.gula);
+  radioGroup('optSuhu', 'suhu', [['Es', 'Es'], ['Panas', 'Panas']], opsi.suhu);
+  hitungOpsi(); show('ovOpsi');
+}
+function hitungOpsi() { $('opsiHarga').textContent = rp(pilihan.harga + UKURAN[opsi.ukuran]); }
+$('ovOpsi').addEventListener('change', (e) => {
+  if (!e.target.name) return;
+  opsi[e.target.name] = e.target.name === 'gula' ? Number(e.target.value) : e.target.value;
+  hitungOpsi();
+});
+$('btnTambah').addEventListener('click', () => { tambahKeranjang(pilihan, opsi); hide('ovOpsi'); });
+
+// ---------- Keranjang ----------
+function tambahKeranjang(m, o, qty = 1) {
+  const key = [m.id, o.ukuran || '', o.gula ?? '', o.suhu || ''].join('|');
+  const ada = cart.find((c) => c.key === key);
+  if (ada) ada.qty += qty;
+  else cart.push({ key, id: m.id, nama: m.nama, harga: m.harga + (o.ukuran ? UKURAN[o.ukuran] : 0), ukuran: o.ukuran, gula: o.gula, suhu: o.suhu, qty });
+  simpanKeranjang();
+}
+function simpanKeranjang() { store.set('kopi_cart', cart); renderBar(); }
+const jumlah = () => cart.reduce((s, c) => s + c.qty, 0);
+const totalHarga = () => cart.reduce((s, c) => s + c.qty * c.harga, 0);
+function renderBar() {
+  $('cartCount').textContent = jumlah() ? `Keranjang (${jumlah()})` : 'Keranjang kosong';
+  $('cartTotal').textContent = jumlah() ? rp(totalHarga()) : '';
+}
+function detail(c) { return c.ukuran ? `${c.ukuran} · gula ${c.gula}% · ${c.suhu}` : ''; }
+function renderCart() {
+  $('cartList').innerHTML = cart.length ? cart.map((c, i) => `
+    <div class="cart-row">
+      <div><strong>${esc(c.nama)}</strong><small>${esc(detail(c))}</small><small class="rp">${rp(c.harga)}</small></div>
+      <div class="qty">
+        <button data-i="${i}" data-d="-1" aria-label="Kurangi ${esc(c.nama)}">&minus;</button>
+        <span>${c.qty}</span>
+        <button data-i="${i}" data-d="1" aria-label="Tambah ${esc(c.nama)}">+</button>
+      </div>
+    </div>`).join('') : '<div class="empty">Keranjang masih kosong. Pilih menu dulu.</div>';
+  $('cartSum').textContent = rp(totalHarga());
+  $('mejaField').classList.toggle('hidden', !!meja);
+  $('btnPesan').disabled = !cart.length;
+  $('cartErr').textContent = '';
+}
+$('btnCart').addEventListener('click', () => { renderCart(); show('ovCart'); });
+$('cartList').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-i]'); if (!b) return;
+  const c = cart[Number(b.dataset.i)]; c.qty += Number(b.dataset.d);
+  if (c.qty <= 0) cart.splice(Number(b.dataset.i), 1);
+  simpanKeranjang(); renderCart();
+});
+$('btnPesan').addEventListener('click', async () => {
+  if (!meja) setMeja($('mejaInput').value);
+  if (!meja) { $('cartErr').textContent = 'Isi nomor meja dulu.'; return; }
+  $('btnPesan').disabled = true;
+  try {
+    const res = await fetch('/api/orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meja, catatan: $('catatan').value, items: cart.map(({ id, qty, ukuran, gula, suhu }) => ({ id, qty, ukuran, gula, suhu })) }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Pesanan gagal dikirim');
+    cart = []; simpanKeranjang(); $('catatan').value = '';
+    store.set('kopi_order', data.id);
+    hide('ovCart'); tampilStatus(data.id);
+  } catch (err) {
+    $('cartErr').textContent = err.message + '. Periksa keranjang lalu coba lagi.';
+    $('btnPesan').disabled = false;
+    loadMenu();
+  }
+});
+
+// ---------- Status pesanan ----------
+const KET = {
+  Baru: 'Pesananmu sudah diterima barista.',
+  Diproses: 'Barista sedang membuat pesananmu.',
+  Siap: 'Pesananmu siap! Segera diantar ke mejamu.',
+  Selesai: 'Pesanan selesai. Terima kasih sudah mampir!',
+};
+const URUT = ['Baru', 'Diproses', 'Siap', 'Selesai'];
+async function tampilStatus(id) {
+  $('viewMenu').classList.add('hidden'); $('viewStatus').classList.remove('hidden'); $('bar').classList.add('hidden');
+  clearInterval(pollTimer);
+  const muat = async () => {
+    try {
+      const res = await fetch('/api/orders/' + id);
+      if (!res.ok) throw new Error();
+      const o = await res.json();
+      $('stKode').textContent = o.kode;
+      $('stNow').textContent = o.status;
+      $('stDesc').textContent = KET[o.status];
+      $('stSteps').innerHTML = URUT.map((s, i) => `<div class="${i <= URUT.indexOf(o.status) ? 'on' : ''}"></div>`).join('');
+      $('stItems').innerHTML = o.items.map((i) => `<div class="cart-row"><div><strong>${i.qty}× ${esc(i.nama)}</strong><small>${esc(detail(i))}</small></div><span class="rp">${rp(i.qty * i.harga)}</span></div>`).join('');
+      $('stTotal').textContent = rp(o.total);
+      if (o.status === 'Selesai') clearInterval(pollTimer);
+    } catch { clearInterval(pollTimer); keMenu(); }
+  };
+  await muat(); pollTimer = setInterval(muat, 3000);
+}
+function keMenu() {
+  clearInterval(pollTimer); store.set('kopi_order', null);
+  $('viewStatus').classList.add('hidden'); $('viewMenu').classList.remove('hidden'); $('bar').classList.remove('hidden');
+  loadMenu();
+}
+$('btnBaru').addEventListener('click', keMenu);
+
+// ---------- Barista AI ----------
+const CONTOH = ['Kopi yang tidak terlalu pahit', 'Minuman segar dan dingin', 'Saya ngantuk, butuh yang kuat', 'Yang creamy tanpa kopi', 'Saya lapar'];
+$('chips').innerHTML = CONTOH.map((c) => `<button type="button">${esc(c)}</button>`).join('');
+$('chips').addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { $('chatInput').value = e.target.textContent; $('chatForm').requestSubmit(); } });
+function bubble(cls, html) { const d = document.createElement('div'); d.className = 'bubble ' + cls; d.innerHTML = html; $('chatLog').appendChild(d); d.scrollIntoView({ block: 'nearest' }); return d; }
+$('btnAI').addEventListener('click', () => {
+  if (!$('chatLog').children.length) bubble('bot', 'Halo! Mau minum atau makan apa hari ini? Ceritakan seleramu.');
+  show('ovAI'); $('chatInput').focus();
+});
+$('chatForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const teks = $('chatInput').value.trim(); if (!teks) return;
+  $('chatInput').value = ''; bubble('me', esc(teks));
+  const tunggu = bubble('bot', 'Sedang memilihkan menu…'); $('chatSend').disabled = true;
+  try {
+    const res = await fetch('/api/rekomendasi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pesan: teks }) });
+    const data = await res.json(); if (!res.ok) throw new Error(data.error);
+    tunggu.innerHTML = esc(data.jawaban) + data.rekomendasi.map((r) => {
+      const m = menu.find((x) => x.id === r.id); if (!m) return '';
+      return `<div class="rek"><div><strong>${esc(m.nama)}</strong><small>${esc(r.alasan)}</small><small class="rp">${rp(m.harga)}</small></div><button class="btn small" data-rek="${m.id}">Tambah</button></div>`;
+    }).join('');
+  } catch { tunggu.textContent = 'Maaf, rekomendasi sedang bermasalah. Silakan pilih langsung dari menu.'; }
+  $('chatSend').disabled = false;
+});
+$('chatLog').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-rek]'); if (!b) return;
+  const m = menu.find((x) => x.id === Number(b.dataset.rek));
+  tambahKeranjang(m, m.minuman ? { ukuran: 'M', gula: 50, suhu: 'Es' } : {});
+  b.textContent = 'Ditambahkan'; b.disabled = true;
+});
+
+// ---------- Overlay ----------
+const show = (id) => $(id).classList.remove('hidden');
+const hide = (id) => $(id).classList.add('hidden');
+document.querySelectorAll('.overlay').forEach((ov) => {
+  ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-close]')) ov.classList.add('hidden'); });
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.overlay').forEach((o) => o.classList.add('hidden')); });
+
+// ---------- Mulai ----------
+setMeja(meja); renderBar(); loadMenu();
+try {
+  const es = new EventSource('/api/events');
+  let pernahTerbuka = false;
+  es.addEventListener('menu', loadMenu);          // menu diubah barista -> tampil langsung
+  es.onopen = () => { if (pernahTerbuka) loadMenu(); pernahTerbuka = true; };
+} catch {}
+const lastOrder = store.get('kopi_order', null);
+if (lastOrder) tampilStatus(lastOrder);
+</script>
+</body>
+</html>

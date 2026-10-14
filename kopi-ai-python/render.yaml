@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: kopi-ai
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: TZ_OFFSET
+        value: "7"
